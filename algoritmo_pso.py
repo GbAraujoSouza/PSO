@@ -11,7 +11,7 @@ class Particula(object):
         self.velocidade = np.random.uniform(-abs(inicializar_pos[1] - inicializar_pos[0]),
                                             abs(inicializar_pos[1] - inicializar_pos[0]), dimencao)
         self.melhorPosicao = copy.copy(self.posicao)
-        self.melhorPosicaoFitness = func_fitness(self.melhorPosicao)
+        self.melhorFitness = func_fitness(self.melhorPosicao)
         self.fitness = func_fitness(self.posicao)
 
     def __str__(self) -> str:
@@ -49,13 +49,13 @@ def f1_elliptic__(solution=None):
 
 
 # F1
-# def func_objetivo(solution,bias=100):
-#     z = np.dot(solution- shiftData1, matrixData1)
-#     return f1_elliptic__(z) + bias
+def func_objetivo(solution,bias=100):
+    z = np.dot(solution- shiftData1, matrixData1)
+    return f1_elliptic__(z) + bias
 # F2
-def func_objetivo(solution, bias=200):
-    z = np.dot(solution - shiftData2, matrixData2)
-    return f2_bent_cigar__(z) + bias
+# def func_objetivo(solution, bias=200):
+#     z = np.dot(solution - shiftData2, matrixData2)
+#     return f2_bent_cigar__(z) + bias
 
 
 # Fronteiras do espaço de busca
@@ -67,13 +67,13 @@ w = 0.6  # inercia
 phiP = 1.1  # coeficiente cognitivo
 phiG = 2.1  # coeficiente social
 numParticulas = 50
-maxIter = 10000
+maxIter = 20000
 # Vmax = np.inf
-Vmax = 100
-repeticoes = 30
+Vmax = 5
+repeticoes = 1
 
-wInicial = 0.6
-wFinal = 0.1
+wInicial = 0.9
+wFinal = 0.4
 
 inicio = time.time()
 
@@ -87,10 +87,9 @@ for repeticao in range(repeticoes):
     for particula in range(numParticulas):
         melhorParticula = particula
         for vizinhos in range(numParticulas):
-            if func_objetivo(populacao[vizinhos].posicao) < func_objetivo(populacao[melhorParticulaIndex].posicao):
+            if populacao[vizinhos].fitness < func_objetivo(populacao[melhorParticulaIndex].posicao):
                 melhorParticulaIndex = vizinhos
-    melhorFitness = func_objetivo(populacao[melhorParticulaIndex].posicao)
-    melhorPos = copy.copy(populacao[melhorParticulaIndex].melhorPosicao)
+    globalFitness = func_objetivo(populacao[melhorParticulaIndex].posicao)
 
     # Loop Principal =========================================================================================
     iteracao = 0
@@ -98,7 +97,7 @@ for repeticao in range(repeticoes):
     while not criterioParadaFlag:
 
         # Critério de Parada ----------------------------------------------------------------------------
-        if (abs(200 - melhorFitness) < 10 ** (-8)) or iteracao >= maxIter:
+        if (abs(100 - globalFitness) < 10 ** (-8)) or iteracao >= maxIter:
             criterioParadaFlag = True
         else:
             # Atualizar população ---------------------------------------------------------------------------
@@ -107,15 +106,15 @@ for repeticao in range(repeticoes):
 
             # Atualizar melhor posições de cada indivíduo
             for particula in range(numParticulas):
-                if func_objetivo(populacao[particula].posicao) < func_objetivo(populacao[particula].melhorPosicao):
+                if populacao[particula].fitness < populacao[particula].melhorFitness:
                     populacao[particula].melhorPosicao = copy.copy(populacao[particula].posicao)
+                    populacao[particula].melhorFitness = populacao[particula].fitness
 
             # Atualizar melhor particula global
             for vizinhos in range(numParticulas):
-                if func_objetivo(populacao[vizinhos].melhorPosicao) < melhorFitness:
+                if populacao[vizinhos].melhorFitness < globalFitness:
                     melhorParticulaIndex = vizinhos
-                    melhorFitness = func_objetivo(populacao[melhorParticulaIndex].melhorPosicao)
-                    melhorPos = copy.copy(populacao[melhorParticulaIndex].melhorPosicao)
+                    globalFitness = populacao[melhorParticulaIndex].melhorFitness
 
             # Atualizar velocidade e posição
             for particula in range(numParticulas):
@@ -129,7 +128,7 @@ for repeticao in range(repeticoes):
                                                                                       componente] -
                                                                                   populacao[particula].posicao[
                                                                                       componente])
-                                                                   + phiG * rg * (melhorPos[componente] -
+                                                                   + phiG * rg * (populacao[melhorParticulaIndex].melhorPosicao[componente] -
                                                                                   populacao[particula].posicao[
                                                                                       componente]))
                     # Verificar intervalo (-Vmax,Vmax)
@@ -138,16 +137,14 @@ for repeticao in range(repeticoes):
                     elif populacao[particula].velocidade[componente] < - Vmax:
                         populacao[particula].velocidade[componente] = - Vmax
                     populacao[particula].posicao[componente] += populacao[particula].velocidade[componente]
-                    # if populacao[particula].posicao[componente] > limSuperior:
-                    #     populacao[particula].posicao[componente] = limSuperior
-                    # elif populacao[particula].posicao[componente] < limInferior:
-                    #     populacao[particula].posicao[componente] = limInferior
-            # if iteracao % 100 == 0:
-            # print("Repetição: {} | Iteração: {} | Melhor FItness: {}".format(repeticao + 1, iteracao, melhorFitness))
+                # Atualizar fitness de casa partícula
+                populacao[particula].fitness = func_objetivo(populacao[particula].posicao)
+            if iteracao % 100 == 0:
+                print("Repetição: {} | Iteração: {} | Melhor FItness: {}".format(repeticao + 1, iteracao, globalFitness))
 
             # print("{}".format(iteracao))
-    solRepeticoes.append(melhorFitness)
-    print("Repetição: {} | Iteração Máxima: {} | Melhor FItness: {}".format(repeticao + 1, iteracao, melhorFitness))
+    solRepeticoes.append(globalFitness)
+    # print("Repetição: {} | Iteração Máxima: {} | Melhor FItness: {}".format(repeticao + 1, iteracao, globalFitness))
 fim = time.time()
 
 # Imprimir resultados =======================================================
