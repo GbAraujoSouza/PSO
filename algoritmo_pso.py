@@ -33,7 +33,7 @@ matrixData2 = matrixData2Load.values
 
 # Fronteiras do espaço de busca
 LIMITE_INFERIOR = -100
-LIMITE_Superior = 100
+LIMITE_SUPERIOR = 100
 
 
 # Funções cec-2014 básicas
@@ -49,13 +49,13 @@ def f1_elliptic__(solution=None):
 
 
 # F1
-# def func_objetivo(solution, bias=100):
-#     z = np.dot(solution - shiftData1, matrixData1)
-#     return f1_elliptic__(z) + bias
+def func_objetivo(solution, bias=100):
+    z = np.dot(solution - shiftData1, matrixData1)
+    return f1_elliptic__(z) + bias
 # F2
-def func_objetivo(solution, bias=200):
-    z = np.dot(solution - shiftData2, matrixData2)
-    return f2_bent_cigar__(z) + bias
+# def func_objetivo(solution, bias=200):
+#     z = np.dot(solution - shiftData2, matrixData2)
+#     return f2_bent_cigar__(z) + bias
 
 
 # Função para otimizar a função objetivo ===============================================================================
@@ -65,7 +65,7 @@ def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
                         func_fitness=func_fitness,
-                        inicializar_pos=(LIMITE_INFERIOR, LIMITE_Superior)) for particula in range(num_particulas)]
+                        inicializar_pos=(LIMITE_INFERIOR, LIMITE_SUPERIOR)) for particula in range(num_particulas)]
     # Inicializar melhor partícula
     melhor_particula_index = 0
     for particula in range(num_particulas):
@@ -101,8 +101,6 @@ def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
                 for componente in range(dimensao):
                     rp = rd.uniform(0, 1)
                     rg = rd.uniform(0, 1)
-                    # rp = 1
-                    # rg = 1
                     enxame[particula].velocidade[componente] = (w * enxame[particula].velocidade[componente] +
                                                                 phi_p * rp *
                                                                 (enxame[particula].melhorPosicao[componente] -
@@ -120,19 +118,18 @@ def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
 
                 # Atualizar fitness de cada partícula
                 enxame[particula].fitness = func_objetivo(enxame[particula].posicao)
-            # if iteracao % 1000 == 0:
-                # print("Repetição: {} | Iteração: {} | Melhor Fitness: {}".format(repeticao + 1, iteracao, globalFitness))
+            if iteracao % 1000 == 0:
+                print("Repetição: {} | Iteração: {} | Melhor Fitness: {}".format(repeticao + 1, iteracao, global_fitness))
     return global_fitness, iteracao
 
 
-# Parâmetros do algoritmo
+# Parâmetros do algoritmo ==============================================================================================
 W = 0.6  # inercia
-phiP = 1.1  # coeficiente cognitivo
-phiG = 2.1  # coeficiente social
-numParticulas = 50
-maxIter = 10000
-# Vmax = np.inf
-Vmax = 10
+phiP = 0  # coeficiente cognitivo
+phiG = 2  # coeficiente social
+numParticulas = 100
+maxIter = 20000
+Vmax = 1
 repeticoes = 1
 
 inicio = time.time()
@@ -150,15 +147,16 @@ for repeticao in range(repeticoes):
                                               v_max=Vmax,
                                               otimo_global=100)
     solRepeticoes.append(melhor_fitness)
-    print("Repetição: {} | Iteração Máxima: {} | Melhor Fitness: {:.8f}".format(repeticao + 1, iteracao_limite, melhor_fitness))
+    print("Repetição: {} | Iteração Máxima: {} | Melhor Fitness: {:.8f}".format(repeticao + 1, iteracao_limite,
+                                                                                melhor_fitness))
 
 fim = time.time()
 
-# Imprimir resultados =======================================================
+# Imprimir resultados ==================================================================================================
 print("Média das repetições: {:.8f}".format(np.mean(solRepeticoes)))
-print("Desvio padrão das repetições: {:.2f}".format(np.std(solRepeticoes)),)
+print("Desvio padrão das repetições: {:.2f}".format(np.std(solRepeticoes)))
 
-# Imprimir tempo de execução =================================================
+# Imprimir tempo de execução ===========================================================================================
 if fim - inicio <= 60:
     print(fim - inicio, "segundos")
 else:
