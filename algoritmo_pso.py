@@ -6,7 +6,7 @@ import time
 
 
 class Particula(object):
-    def __init__(self, dimensao: int, func_fitness, inicializar_pos: tuple = (-1, 1)) -> None:
+    def __init__(self, dimensao: int, func_fitness: callable, inicializar_pos: tuple = (-1, 1)) -> None:
         self.posicao = np.random.uniform(inicializar_pos[0], inicializar_pos[1], dimensao)
         self.velocidade = np.random.uniform(-abs(inicializar_pos[1] - inicializar_pos[0]),
                                             abs(inicializar_pos[1] - inicializar_pos[0]), dimensao)
@@ -49,18 +49,20 @@ def f1_elliptic__(solution=None):
 
 
 # F1
-def func_objetivo(solution, bias=100):
+def func_objetivo_1(solution, bias=100):
     z = np.dot(solution - shiftData1, matrixData1)
     return f1_elliptic__(z) + bias
+
+
 # F2
-# def func_objetivo(solution, bias=200):
-#     z = np.dot(solution - shiftData2, matrixData2)
-#     return f2_bent_cigar__(z) + bias
+def func_objetivo_2(solution, bias=200):
+    z = np.dot(solution - shiftData2, matrixData2)
+    return f2_bent_cigar__(z) + bias
 
 
 # Função para otimizar a função objetivo ===============================================================================
-def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
-            num_particulas, max_iter, v_max, otimo_global):
+def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g: float,
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float):
 
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
@@ -69,7 +71,6 @@ def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
     # Inicializar melhor partícula
     melhor_particula_index = 0
     for particula in range(num_particulas):
-        melhor_particula_index = particula
         if enxame[particula].fitness < func_fitness(enxame[melhor_particula_index].posicao):
             melhor_particula_index = particula
     global_fitness = func_fitness(enxame[melhor_particula_index].posicao)
@@ -91,9 +92,9 @@ def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
                     enxame[particula].melhorFitness = enxame[particula].fitness
 
             # Atualizar melhor particula global
-            for vizinhos in range(numParticulas):
-                if enxame[vizinhos].melhorFitness < global_fitness:
-                    melhor_particula_index = vizinhos
+            for particulas in range(numParticulas):
+                if enxame[particulas].melhorFitness < global_fitness:
+                    melhor_particula_index = particulas
                     global_fitness = enxame[melhor_particula_index].melhorFitness
 
             # Atualizar velocidade e posição
@@ -114,30 +115,30 @@ def otimiza(func_fitness, dimensao, w, phi_p, phi_g,
                         enxame[particula].velocidade[componente] = v_max
                     elif enxame[particula].velocidade[componente] < - v_max:
                         enxame[particula].velocidade[componente] = - v_max
-                    enxame[particula].posicao[componente] += enxame[particula].velocidade[componente]
+
+                # Atualizar posição da particula
+                enxame[particula].posicao += enxame[particula].velocidade
 
                 # Atualizar fitness de cada partícula
-                enxame[particula].fitness = func_objetivo(enxame[particula].posicao)
-            if iteracao % 1000 == 0:
-                print("Repetição: {} | Iteração: {} | Melhor Fitness: {}".format(repeticao + 1, iteracao, global_fitness))
+                enxame[particula].fitness = func_fitness(enxame[particula].posicao)
     return global_fitness, iteracao
 
 
 # Parâmetros do algoritmo ==============================================================================================
 W = 0.6  # inercia
-phiP = 0  # coeficiente cognitivo
-phiG = 2  # coeficiente social
+phiP = 0.2  # coeficiente cognitivo
+phiG = 2.0  # coeficiente social
 numParticulas = 100
-maxIter = 20000
+maxIter = 100000
 Vmax = 1
-repeticoes = 1
+repeticoes = 30
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo,
+    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_1,
                                               dimensao=DIMENSAO,
                                               w=W,
                                               phi_p=phiP,
