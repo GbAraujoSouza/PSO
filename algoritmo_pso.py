@@ -10,8 +10,8 @@ class Particula(object):
         self.posicao = np.random.uniform(inicializar_pos[0], inicializar_pos[1], dimensao)
         self.velocidade = np.random.uniform(-abs(inicializar_pos[1] - inicializar_pos[0]),
                                             abs(inicializar_pos[1] - inicializar_pos[0]), dimensao)
-        self.melhorPosicao = copy.copy(self.posicao)
-        self.melhorFitness = func_fitness(self.melhorPosicao)
+        self.melhor_posicao = copy.copy(self.posicao)
+        self.melhor_fitness = func_fitness(self.melhor_posicao)
         self.fitness = func_fitness(self.posicao)
 
 
@@ -67,7 +67,7 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
                         func_fitness=func_fitness,
-                        inicializar_pos=(LIMITE_INFERIOR, LIMITE_SUPERIOR)) for particula in range(num_particulas)]
+                        inicializar_pos=(LIMITE_INFERIOR, LIMITE_SUPERIOR)) for _ in range(num_particulas)]
     # Inicializar melhor partícula
     melhor_particula_index = 0
     for particula in range(num_particulas):
@@ -87,15 +87,15 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
             iteracao += 1
             # Atualizar melhor posição de cada partícula
             for particula in range(num_particulas):
-                if enxame[particula].fitness < enxame[particula].melhorFitness:
-                    enxame[particula].melhorPosicao = copy.copy(enxame[particula].posicao)
-                    enxame[particula].melhorFitness = enxame[particula].fitness
+                if enxame[particula].fitness < enxame[particula].melhor_fitness:
+                    enxame[particula].melhor_posicao = copy.copy(enxame[particula].posicao)
+                    enxame[particula].melhor_fitness = enxame[particula].fitness
 
             # Atualizar melhor particula global
             for particulas in range(numParticulas):
-                if enxame[particulas].melhorFitness < global_fitness:
+                if enxame[particulas].melhor_fitness < global_fitness:
                     melhor_particula_index = particulas
-                    global_fitness = enxame[melhor_particula_index].melhorFitness
+                    global_fitness = enxame[melhor_particula_index].melhor_fitness
 
             # Atualizar velocidade e posição
             for particula in range(numParticulas):
@@ -104,10 +104,10 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                     rg = rd.uniform(0, 1)
                     enxame[particula].velocidade[componente] = (w * enxame[particula].velocidade[componente] +
                                                                 phi_p * rp *
-                                                                (enxame[particula].melhorPosicao[componente] -
+                                                                (enxame[particula].melhor_posicao[componente] -
                                                                  enxame[particula].posicao[componente])
                                                                 + phi_g * rg *
-                                                                (enxame[melhor_particula_index].melhorPosicao[
+                                                                (enxame[melhor_particula_index].melhor_posicao[
                                                                      componente] -
                                                                  enxame[particula].posicao[componente]))
                     # Verificar intervalo (-Vmax,Vmax)
@@ -119,25 +119,25 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                 # Atualizar posição da particula
                 enxame[particula].posicao += enxame[particula].velocidade
 
-                # Muta'c~ao em gbest
-                if rd.uniform(0, 1) < 1 / dimensao:
-                    N = np.random.normal()
-                    tau = 1 / np.sqrt(2 * num_particulas)
-                    tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
-                    particula_mutante = np.zeros(dimensao)
-                    for componente in range(dimensao):
-                        Nj = np.random.normal()
-                        beta_linha = 3 * np.exp(tau * N + tau_linha * Nj)
-                        particula_mutante[componente] = enxame[melhor_particula_index].melhorPosicao[
-                                                            componente] + beta_linha * np.random.beta(0.5, 0.5)
+            # Muta'c~ao em gbest
+            if rd.uniform(0, 1) < 1 / dimensao:
+                n_normal = np.random.normal()
+                tau = 1 / np.sqrt(2 * num_particulas)
+                tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
+                particula_mutante = np.zeros(dimensao)
+                for componente in range(dimensao):
+                    n_normal_componente = np.random.normal()
+                    beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
+                    particula_mutante[componente] = enxame[melhor_particula_index].melhor_posicao[
+                                                        componente] + beta_linha * np.random.beta(0.5, 0.5)
 
-                    if func_fitness(particula_mutante) < global_fitness:
-                        enxame[melhor_particula_index].melhorPosicao = particula_mutante
-                        global_fitness = func_fitness(particula_mutante)
+                if func_fitness(particula_mutante) < global_fitness:
+                    enxame[melhor_particula_index].melhor_posicao = particula_mutante
+                    global_fitness = func_fitness(particula_mutante)
 
-                # Atualizar fitness de cada partícula
-                for particula in range(num_particulas):
-                    enxame[particula].fitness = func_fitness(enxame[particula].posicao)
+            # Atualizar fitness de cada partícula
+            for particula in range(num_particulas):
+                enxame[particula].fitness = func_fitness(enxame[particula].posicao)
     return global_fitness, iteracao
 
 
