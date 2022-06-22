@@ -119,14 +119,31 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                 # Atualizar posição da particula
                 enxame[particula].posicao += enxame[particula].velocidade
 
+                # Muta'c~ao em gbest
+                if rd.uniform(0, 1) < 1 / dimensao:
+                    N = np.random.normal()
+                    tau = 1 / np.sqrt(2 * num_particulas)
+                    tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
+                    particula_mutante = np.zeros(dimensao)
+                    for componente in range(dimensao):
+                        Nj = np.random.normal()
+                        beta_linha = 3 * np.exp(tau * N + tau_linha * Nj)
+                        particula_mutante[componente] = enxame[melhor_particula_index].melhorPosicao[
+                                                            componente] + beta_linha * np.random.beta(0.5, 0.5)
+
+                    if func_fitness(particula_mutante) < global_fitness:
+                        enxame[melhor_particula_index].melhorPosicao = particula_mutante
+                        global_fitness = func_fitness(particula_mutante)
+
                 # Atualizar fitness de cada partícula
-                enxame[particula].fitness = func_fitness(enxame[particula].posicao)
+                for particula in range(num_particulas):
+                    enxame[particula].fitness = func_fitness(enxame[particula].posicao)
     return global_fitness, iteracao
 
 
 # Parâmetros do algoritmo ==============================================================================================
 W = 0.6  # inercia
-phiP = 0.2  # coeficiente cognitivo
+phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
 numParticulas = 100
 maxIter = 100000
