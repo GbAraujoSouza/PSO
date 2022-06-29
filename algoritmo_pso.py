@@ -135,12 +135,13 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                     for componente in range(dimensao):
                         n_normal_componente = np.random.normal()
                         beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
-                        particula_mutante[componente] = enxame[melhor_particula_index].melhor_posicao[
-                                                            componente] + beta_linha * np.random.beta(0.5, 0.5)
+                        enxame[melhor_particula_index].melhor_posicao[componente] += beta_linha * np.random.beta(0.5, 0.5)
+                    global_fitness = func_fitness(enxame[melhor_particula_index].melhor_posicao)
 
-                    if func_fitness(particula_mutante) < global_fitness:
-                        enxame[melhor_particula_index].melhor_posicao = copy.copy(particula_mutante)
-                        global_fitness = func_fitness(particula_mutante)
+                    for particula in range(particula):
+                        if enxame[particula].melhor_fitness < global_fitness:
+                                melhor_particula_index = particula
+                                global_fitness = enxame[melhor_particula_index].melhor_fitness
             
             # Mutação em pbest
             if pbest_mutation:
