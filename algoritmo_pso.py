@@ -1,4 +1,5 @@
 import copy
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import random as rd
@@ -62,7 +63,7 @@ def func_objetivo_2(solution, bias=200):
 
 # Função para otimizar a função objetivo ===============================================================================
 def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g: float,
-            num_particulas: int, max_iter: int, v_max: float, otimo_global: float):
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation: bool) -> float and int:
 
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
@@ -78,6 +79,7 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
     # Encontrar melhor solução
     iteracao = 0
     criterio_parada_flag = False
+    melhores_fitness = []
     while not criterio_parada_flag:
 
         # Avaliar critério de parada
@@ -119,54 +121,55 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                 # Atualizar posição da particula
                 enxame[particula].posicao += enxame[particula].velocidade
 
-            # Muta'c~ao em gbest
-            if rd.uniform(0, 1) < 1 / dimensao:
-                n_normal = np.random.normal()
-                tau = 1 / np.sqrt(2 * num_particulas)
-                tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
-                particula_mutante = np.zeros(dimensao)
-                for componente in range(dimensao):
-                    n_normal_componente = np.random.normal()
-                    beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
-                    particula_mutante[componente] = enxame[melhor_particula_index].melhor_posicao[
-                                                        componente] + beta_linha * np.random.beta(0.5, 0.5)
-
-                if func_fitness(particula_mutante) < global_fitness:
-                    enxame[melhor_particula_index].melhor_posicao = particula_mutante
-                    global_fitness = func_fitness(particula_mutante)
-
             # Atualizar fitness de cada partícula
             for particula in range(num_particulas):
                 enxame[particula].fitness = func_fitness(enxame[particula].posicao)
-    return global_fitness, iteracao
+
+            # Mutação em gbest
+            if gbest_mutation:
+                if rd.uniform(0, 1) < 1 / dimensao:
+                    n_normal = np.random.normal()
+                    tau = 1 / np.sqrt(2 * num_particulas)
+                    tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
+                    particula_mutante = np.zeros(dimensao)
+                    for componente in range(dimensao):
+                        n_normal_componente = np.random.normal()
+                        beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
+                        particula_mutante[componente] = enxame[melhor_particula_index].melhor_posicao[
+                                                            componente] + beta_linha * np.random.beta(0.5, 0.5)
+
+                    if func_fitness(particula_mutante) < global_fitness:
+                        enxame[melhor_particula_index].melhor_posicao = particula_mutante
+                        global_fitness = func_fitness(particula_mutante)
+
+
+    return global_fitness, iteracao, melhores_fitness
 
 
 # Parâmetros do algoritmo ==============================================================================================
 W = 0.6  # inercia
 phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
-numParticulas = 100
+numParticulas = 50
 maxIter = 100000
 Vmax = 1
-repeticoes = 30
+repeticoes = 1
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_1,
-                                              dimensao=DIMENSAO,
-                                              w=W,
-                                              phi_p=phiP,
-                                              phi_g=phiG,
-                                              num_particulas=numParticulas,
-                                              max_iter=maxIter,
-                                              v_max=Vmax,
-                                              otimo_global=100)
-    solRepeticoes.append(melhor_fitness)
-    print("Repetição: {} | Iteração Máxima: {} | Melhor Fitness: {:.8f}".format(repeticao + 1, iteracao_limite,
-                                                                                melhor_fitness))
+    melhor_fitness, iteracao_limite, melhores_fitness = otimiza(func_fitness=func_objetivo_2,
+                                                                dimensao=DIMENSAO,
+                                                                w=W,
+                                                                phi_p=phiP,
+                                                                phi_g=phiG,
+                                                                num_particulas=numParticulas,
+                                                                max_iter=maxIter,
+                                                                v_max=Vmax,
+                                                                otimo_global=200,
+                                                                gbest_mutation=True)
 
 fim = time.time()
 
