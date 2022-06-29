@@ -165,6 +165,9 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                         if enxame[particula].melhor_fitness < global_fitness:
                             melhor_particula_index = particula
                             global_fitness = enxame[melhor_particula_index].melhor_fitness
+            
+            # Armazenar fitness da melhor particula
+            melhores_fitness.append(enxame[melhor_particula_index].fitness)
 
 
     return global_fitness, iteracao, melhores_fitness
@@ -174,17 +177,17 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
 W = 0.6  # inercia
 phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
-numParticulas = 50
+numParticulas = 100
 maxIter = 100000
-Vmax = 1
-repeticoes = 1
+Vmax = 2
+repeticoes = 10
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite, melhores_fitness = otimiza(func_fitness=func_objetivo_2,
+    melhor_fitness, iteracao_limite, melhores_fitness = otimiza(func_fitness=func_objetivo_1,
                                                                 dimensao=DIMENSAO,
                                                                 w=W,
                                                                 phi_p=phiP,
@@ -192,9 +195,27 @@ for repeticao in range(repeticoes):
                                                                 num_particulas=numParticulas,
                                                                 max_iter=maxIter,
                                                                 v_max=Vmax,
-                                                                otimo_global=200,
+                                                                otimo_global=100,
                                                                 gbest_mutation=False,
-                                                                pbest_mutation=False)
+                                                                pbest_mutation=True)
+
+    # Plotar grafico de evolucao
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    geracoes = np.arange(0, iteracao_limite)
+
+    ax.set_title("Grafico de evolucao")
+    ax.set_xlabel("iteracoes")
+    ax.set_ylabel("fitness")
+    ax.set_ylim((199.99999, 200.000005))
+    ax.scatter(geracoes[::500], melhores_fitness[::500])
+    plt.show()
+
+    solRepeticoes.append(melhor_fitness)
+    print("Repetição: {} | Iteração Máxima: {} | Melhor Fitness: {:.8f}".format(repeticao + 1, iteracao_limite,
+                                                                                melhor_fitness))
+
 
 fim = time.time()
 
