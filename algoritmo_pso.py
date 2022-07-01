@@ -201,11 +201,6 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                     mutations.append(copy.copy(enxame[melhor_particula_index].melhor_posicao) + weight_vector * (np.random.standard_cauchy() / 100))
 
                 if min([func_fitness(x) for x in mutations]) < global_fitness:
-                    print()
-                    print(global_fitness)
-                    print(np.min([func_fitness(x) for x in mutations]))
-                    print("\niteração: {}\n".format(iteracao))
-                    print()
                     enxame[melhor_particula_index].melhor_posicao = mutations[np.argmin([func_fitness(x) for x in mutations])]
                     global_fitness = min([func_fitness(x) for x in mutations])
 
