@@ -1,4 +1,5 @@
 import copy
+from ctypes import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -62,8 +63,8 @@ def func_objetivo_2(solution, bias=200):
 
 
 # Função para otimizar a função objetivo ===============================================================================
-def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g: float,
-            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation: bool, pbest_mutation: bool) -> float and int:
+def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_beta: bool, pbest_mutation_beta: bool, gbest_mutation_cauchy: bool, w: float | tuple, metodo_inercia: str = "normal") -> float and int and list:
 
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
@@ -86,7 +87,7 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
         if (abs(otimo_global - global_fitness) < 10 ** -8) or iteracao >= max_iter:
             criterio_parada_flag = True
         else:
-            iteracao += 1
+            
             # Atualizar melhor posição de cada partícula
             for particula in range(num_particulas):
                 if enxame[particula].fitness < enxame[particula].melhor_fitness:
@@ -100,11 +101,25 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                     global_fitness = enxame[melhor_particula_index].melhor_fitness
 
             # Atualizar velocidade e posição
+            if metodo_inercia == "linear":
+                if type(w) != tuple:
+                    raise TypeError('Para inercia linear, \'intervalo inercia\' precisar ser do tipo (w_inicial, w_final)')
+                inercia = (w[0] - w[1]) * ((max_iter - iteracao) / max_iter) + w[1]
+            
+            elif metodo_inercia == "normal":
+                if type(w) not in (float, int):
+                    raise TypeError('Método normal de inercia requer valor numérico em \'w\'')
+                inercia = w
+            
+            else:
+                raise TypeError('\'metodo_inercia\' precisa ser \"normal\" ou \"linear\"')
+            
+
             for particula in range(numParticulas):
                 for componente in range(dimensao):
                     rp = rd.uniform(0, 1)
                     rg = rd.uniform(0, 1)
-                    enxame[particula].velocidade[componente] = (w * enxame[particula].velocidade[componente] +
+                    enxame[particula].velocidade[componente] = (inercia * enxame[particula].velocidade[componente] +
                                                                 phi_p * rp *
                                                                 (enxame[particula].melhor_posicao[componente] -
                                                                  enxame[particula].posicao[componente])
@@ -125,8 +140,8 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
             for particula in range(num_particulas):
                 enxame[particula].fitness = func_fitness(enxame[particula].posicao)
 
-            # Mutação em gbest
-            if gbest_mutation:
+            # Mutação beta em gbest
+            if gbest_mutation_beta:
                 if rd.uniform(0, 1) < 1 / dimensao:
                     n_normal = np.random.normal()
                     tau = 1 / np.sqrt(2 * num_particulas)
@@ -143,8 +158,8 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                                 melhor_particula_index = particula
                                 global_fitness = enxame[melhor_particula_index].melhor_fitness
             
-            # Mutação em pbest
-            if pbest_mutation:
+            # Mutação beta em pbest
+            if pbest_mutation_beta:
                 for particula in range(num_particulas):
                     if rd.uniform(0, 1) < 1 / dimensao:
                         n_normal = np.random.normal()
@@ -165,19 +180,46 @@ def otimiza(func_fitness: callable, dimensao: int, w: float, phi_p: float, phi_g
                         if enxame[particula].melhor_fitness < global_fitness:
                             melhor_particula_index = particula
                             global_fitness = enxame[melhor_particula_index].melhor_fitness
-            
+
             # Armazenar fitness da melhor particula
             melhores_fitness.append(enxame[melhor_particula_index].fitness)
+
+
+            if gbest_mutation_cauchy:
+                weight_vector = np.zeros(dimensao)
+                for particula in range(num_particulas):
+                    weight_vector += copy.copy(enxame[particula].velocidade / num_particulas)
+                
+                for componente in range(dimensao):
+                    if weight_vector[componente] > 1:
+                        weight_vector[componente] = 1
+                    elif weight_vector[componente] < - 1:
+                        weight_vector[componente] = - 1
+
+                mutations = []
+                for mutacao in range(20):
+                    mutations.append(copy.copy(enxame[melhor_particula_index].melhor_posicao) + weight_vector * (np.random.standard_cauchy() / 100))
+
+                if min([func_fitness(x) for x in mutations]) < global_fitness:
+                    print()
+                    print(global_fitness)
+                    print(np.min([func_fitness(x) for x in mutations]))
+                    print("\niteração: {}\n".format(iteracao))
+                    print()
+                    enxame[melhor_particula_index].melhor_posicao = mutations[np.argmin([func_fitness(x) for x in mutations])]
+                    global_fitness = min([func_fitness(x) for x in mutations])
+
+            iteracao += 1
 
 
     return global_fitness, iteracao, melhores_fitness
 
 
 # Parâmetros do algoritmo ==============================================================================================
-W = 0.6  # inercia
-phiP = 1.0  # coeficiente cognitivo
+W = (0.9, 0.4)  # inercia
+phiP = 2.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
-numParticulas = 100
+numParticulas = 50
 maxIter = 100000
 Vmax = 2
 repeticoes = 10
@@ -187,33 +229,35 @@ inicio = time.time()
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite, melhores_fitness = otimiza(func_fitness=func_objetivo_1,
+    melhor_fitness, iteracao_limite, melhores_fitness = otimiza(func_fitness=func_objetivo_2,
                                                                 dimensao=DIMENSAO,
                                                                 w=W,
+                                                                metodo_inercia="linear",
                                                                 phi_p=phiP,
                                                                 phi_g=phiG,
                                                                 num_particulas=numParticulas,
                                                                 max_iter=maxIter,
                                                                 v_max=Vmax,
-                                                                otimo_global=100,
-                                                                gbest_mutation=False,
-                                                                pbest_mutation=True)
+                                                                otimo_global=200,
+                                                                gbest_mutation_beta=False,
+                                                                pbest_mutation_beta=False,
+                                                                gbest_mutation_cauchy=False)
 
     # Plotar grafico de evolucao
-    fig = plt.figure()
-    ax = fig.add_subplot()
+    # fig = plt.figure()
+    # ax = fig.add_subplot()
 
-    geracoes = np.arange(0, iteracao_limite)
+    # geracoes = np.arange(0, iteracao_limite)
 
-    ax.set_title("Grafico de evolucao")
-    ax.set_xlabel("iteracoes")
-    ax.set_ylabel("fitness")
-    ax.set_ylim((199.99999, 200.000005))
-    ax.scatter(geracoes[::500], melhores_fitness[::500])
-    plt.show()
+    # ax.set_title("Grafico de evolucao")
+    # ax.set_xlabel("iteracoes")
+    # ax.set_ylabel("fitness")
+    # ax.set_ylim((199.99999, 200.000005))
+    # ax.scatter(geracoes[::500], melhores_fitness[::500])
+    # plt.show()
 
     solRepeticoes.append(melhor_fitness)
-    print("Repetição: {} | Iteração Máxima: {} | Melhor Fitness: {:.8f}".format(repeticao + 1, iteracao_limite,
+    print("Repetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
                                                                                 melhor_fitness))
 
 
