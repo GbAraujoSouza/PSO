@@ -62,6 +62,13 @@ def func_objetivo_2(solution, bias=200):
     return f2_bent_cigar__(z) + bias
 
 
+# Função para imprimir barra de progresso
+def barra_progresso(progresso: int, total: int) -> None:
+    porcentagem = 100 * (progresso / float(total))
+    barra = '█' * int(porcentagem) + '-' * (100 - int(porcentagem))
+    print("\r|{}| {:.2f}%".format(barra, porcentagem), end="\r")
+
+
 # Função para otimizar a função objetivo ===============================================================================
 def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_beta: bool, pbest_mutation_beta: bool, gbest_mutation_cauchy: bool, w: float | tuple, metodo_inercia: str = "normal") -> float and int and list:
@@ -210,6 +217,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                     global_fitness = min([func_fitness(x) for x in mutations])
 
             iteracao += 1
+            barra_progresso(iteracao, max_iter)
 
 
     return global_fitness, iteracao, melhores_fitness, piores_fitness, media_fitness
@@ -244,7 +252,7 @@ for repeticao in range(repeticoes):
                                                                                 gbest_mutation_cauchy=False)
 
     solRepeticoes.append(melhor_fitness)
-    print("Repetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
+    print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
                                                                                 melhor_fitness))
 
     # Plotar grafico de evolucao
