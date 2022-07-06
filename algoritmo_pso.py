@@ -81,6 +81,8 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
     iteracao = 0
     criterio_parada_flag = False
     melhores_fitness = []
+    piores_fitness = []
+    media_fitness = []
     while not criterio_parada_flag:
 
         # Avaliar critério de parada
@@ -182,7 +184,10 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                             global_fitness = enxame[melhor_particula_index].melhor_fitness
 
             # Armazenar fitness da melhor particula
-            melhores_fitness.append(enxame[melhor_particula_index].fitness)
+            melhores_fitness.append(global_fitness)
+            piores_fitness.append(func_fitness(enxame[np.argmax([func_fitness(x.posicao) for x in enxame[:]])].posicao))
+            # media_fitness.append(np.mean([func_fitness(x.posicao) for x in enxame[:]]))
+            media_fitness.append(np.median([func_fitness(x.posicao) for x in enxame[:]]))
 
 
             if gbest_mutation_cauchy:
@@ -197,8 +202,8 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                         weight_vector[componente] = - 1
 
                 mutations = []
-                for mutacao in range(20):
-                    mutations.append(copy.copy(enxame[melhor_particula_index].melhor_posicao) + weight_vector * (np.random.standard_cauchy() / 100))
+                for _ in range(20):
+                    mutations.append(copy.copy(enxame[melhor_particula_index].melhor_posicao) + weight_vector * (np.random.standard_cauchy() % 100))
 
                 if min([func_fitness(x) for x in mutations]) < global_fitness:
                     enxame[melhor_particula_index].melhor_posicao = mutations[np.argmin([func_fitness(x) for x in mutations])]
@@ -207,59 +212,67 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             iteracao += 1
 
 
-    return global_fitness, iteracao, melhores_fitness
+    return global_fitness, iteracao, melhores_fitness, piores_fitness, media_fitness
 
 
 # Parâmetros do algoritmo ==============================================================================================
-W = (0.9, 0.4)  # inercia
-phiP = 2.0  # coeficiente cognitivo
+W = 0.6  # inercia
+phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
 numParticulas = 50
 maxIter = 100000
 Vmax = 2
-repeticoes = 10
+repeticoes = 1
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite, melhores_fitness = otimiza(func_fitness=func_objetivo_2,
-                                                                dimensao=DIMENSAO,
-                                                                w=W,
-                                                                metodo_inercia="linear",
-                                                                phi_p=phiP,
-                                                                phi_g=phiG,
-                                                                num_particulas=numParticulas,
-                                                                max_iter=maxIter,
-                                                                v_max=Vmax,
-                                                                otimo_global=200,
-                                                                gbest_mutation_beta=False,
-                                                                pbest_mutation_beta=False,
-                                                                gbest_mutation_cauchy=False)
-
-    # Plotar grafico de evolucao
-    # fig = plt.figure()
-    # ax = fig.add_subplot()
-
-    # geracoes = np.arange(0, iteracao_limite)
-
-    # ax.set_title("Grafico de evolucao")
-    # ax.set_xlabel("iteracoes")
-    # ax.set_ylabel("fitness")
-    # ax.set_ylim((199.99999, 200.000005))
-    # ax.scatter(geracoes[::500], melhores_fitness[::500])
-    # plt.show()
+    melhor_fitness, iteracao_limite, melhores_fitness, piores_fitness, media_fitness = otimiza(func_fitness=func_objetivo_2,
+                                                                                dimensao=DIMENSAO,
+                                                                                w=W,
+                                                                                metodo_inercia="normal",
+                                                                                phi_p=phiP,
+                                                                                phi_g=phiG,
+                                                                                num_particulas=numParticulas,
+                                                                                max_iter=maxIter,
+                                                                                v_max=Vmax,
+                                                                                otimo_global=200,
+                                                                                gbest_mutation_beta=False,
+                                                                                pbest_mutation_beta=False,
+                                                                                gbest_mutation_cauchy=False)
 
     solRepeticoes.append(melhor_fitness)
     print("Repetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
                                                                                 melhor_fitness))
 
+    # Plotar grafico de evolucao
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    geracoes = np.arange(0, iteracao_limite)
+
+    ax.set_title("Grafico de evolucao")
+    ax.set_xlabel("iteracoes")
+    ax.set_ylabel("fitness")
+    ax.set_ylim((200, 500))
+    ax.scatter(geracoes[1000::500], melhores_fitness[1000::500], label="Melhor particula")
+    ax.scatter(geracoes[1000::500], piores_fitness[1000::500], label="Pior particula")
+    ax.scatter(geracoes[1000::500], media_fitness[1000::500], label="Média particula")
+
+    # Add legend to the plot
+    legend = ax.legend(loc='upper right', shadow=True, fontsize='medium')
+    legend.get_frame().set_facecolor('#eeeeee')
+
+    plt.show()
+    plt.close()
+
 
 fim = time.time()
 
 # Imprimir resultados ==================================================================================================
-print("Média das repetições: {:.8f}".format(np.mean(solRepeticoes)))
+print("Média das repetições: {:.9f}".format(np.mean(solRepeticoes)))
 print("Desvio padrão das repetições: {:.2f}".format(np.std(solRepeticoes)))
 
 # Imprimir tempo de execução ===========================================================================================
