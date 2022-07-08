@@ -1,6 +1,4 @@
 import copy
-from ctypes import Union
-import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -84,7 +82,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
         if enxame[particula].fitness < func_fitness(enxame[melhor_particula_index].posicao):
             melhor_particula_index = particula
     global_fitness = func_fitness(enxame[melhor_particula_index].posicao)
-
+    print(global_fitness)
     # Encontrar melhor solução
     iteracao = 0
     criterio_parada_flag = False
@@ -225,70 +223,82 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
     return global_fitness, iteracao, melhores_fitness, piores_fitness, media_fitness, mediana_fitness
 
 
-# Parâmetros do algoritmo ==============================================================================================
-W = 0.6  # inercia
-phiP = 2.0  # coeficiente cognitivo
-phiG = 2.0  # coeficiente social
-numParticulas = 10
-maxIter = 10000
-Vmax = 1
-repeticoes = 30
 
-inicio = time.time()
 
-solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
-for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite, melhores_fitness, piores_fitness, media_fitness , mediana_fitness= otimiza(func_fitness=func_objetivo_2,
-                                                                                dimensao=DIMENSAO,
-                                                                                w=0.6,
-                                                                                metodo_inercia="normal",
-                                                                                phi_p=phiP,
-                                                                                phi_g=phiG,
-                                                                                num_particulas=numParticulas,
-                                                                                max_iter=maxIter,
-                                                                                v_max=Vmax,
-                                                                                otimo_global=200,
-                                                                                gbest_mutation_beta=False,
-                                                                                pbest_mutation_beta=False,
-                                                                                gbest_mutation_cauchy=False)
 
-    solRepeticoes.append(melhor_fitness)
-    print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
-                                                                                melhor_fitness))
+def pso(repeticoes: int, func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_beta: bool, pbest_mutation_beta: bool, gbest_mutation_cauchy: bool, w: float | tuple, metodo_inercia: str = "normal"):
+    solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
-    # Plotar grafico de evolucao
-    fig = plt.figure()
-    ax = fig.add_subplot()
+    for repeticao in range(repeticoes):
+        melhor_fitness, iteracao_limite, melhores_fitness, piores_fitness, media_fitness , mediana_fitness = otimiza(func_fitness=func_fitness,
+                                                                                                                    dimensao=dimensao,
+                                                                                                                    w=w,
+                                                                                                                    metodo_inercia=metodo_inercia,
+                                                                                                                    phi_p=phi_p,
+                                                                                                                    phi_g=phi_g,
+                                                                                                                    num_particulas=num_particulas,
+                                                                                                                    max_iter=max_iter,
+                                                                                                                    v_max=v_max,
+                                                                                                                    otimo_global=otimo_global,
+                                                                                                                    gbest_mutation_beta=gbest_mutation_beta,
+                                                                                                                    pbest_mutation_beta=pbest_mutation_beta,
+                                                                                                                    gbest_mutation_cauchy=gbest_mutation_cauchy)
 
-    geracoes = np.arange(0, iteracao_limite)
+        solRepeticoes.append(melhor_fitness)
+        print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
+                                                                                    melhor_fitness))
 
-    ax.set_title("Grafico de evolucao")
-    ax.set_xlabel("iteracoes")
-    ax.set_ylabel("fitness")
-    ax.set_ylim((100, 500))
-    ax.scatter(geracoes[1000::500], melhores_fitness[1000::500], label="Melhor particula")
-    ax.scatter(geracoes[1000::500], piores_fitness[1000::500], label="Pior particula")
-    ax.scatter(geracoes[1000::500], media_fitness[1000::500], label="Média particula")
-    ax.scatter(geracoes[1000::500], mediana_fitness[1000::500], label="Mediana particula")
+        # Plotar grafico de evolucao
+        fig = plt.figure()
+        ax = fig.add_subplot()
 
-    # Add legend to the plot
-    legend = ax.legend(loc='upper right', shadow=True, fontsize='medium')
-    legend.get_frame().set_facecolor('#eeeeee')
+        geracoes = np.arange(0, iteracao_limite)
 
-    fig.savefig('beta_p_best_mutation.png')
+        ax.set_title("Grafico de evolucao")
+        ax.set_xlabel("iteracoes")
+        ax.set_ylabel("fitness")
+        ax.set_ylim((200, 500))
+        ax.scatter(geracoes[1000::500], melhores_fitness[1000::500], label="Melhor particula")
+        ax.scatter(geracoes[1000::500], piores_fitness[1000::500], label="Pior particula")
+        ax.scatter(geracoes[1000::500], media_fitness[1000::500], label="Média particula")
+        ax.scatter(geracoes[1000::500], mediana_fitness[1000::500], label="Mediana particula")
+
+        # Add legend to the plot
+        legend = ax.legend(loc='upper right', shadow=True, fontsize='medium')
+        legend.get_frame().set_facecolor('#eeeeee')
+
+    #     fig.savefig('beta_p_best_mutation.png')
     # plt.show()
     # plt.close(fig)
 
 
+
+
+    # Imprimir resultados ==================================================================================================
+    print("Média das repetições: {}".format(np.mean(solRepeticoes)))
+    print("Desvio padrão das repetições: {:.2f}".format(np.std(solRepeticoes)))
+
+    # Imprimir tempo de execução ===========================================================================================
+    if fim - inicio <= 60:
+        print(fim - inicio, "segundos")
+    else:
+        print((fim - inicio) / 60, "minutos")
+
+
+# Parâmetros do algoritmo ==============================================================================================
+W = 0.6  # inercia
+phiP = 1.5  # coeficiente cognitivo
+phiG = 2.0  # coeficiente social
+numParticulas = 1000
+maxAvaliacao = 100000
+maxIter = maxAvaliacao // numParticulas
+Vmax = 2
+repeticoes = 30
+
+inicio = time.time()
+
+pso(repeticoes=30, func_fitness=func_objetivo_2, dimensao=DIMENSAO, w=W, metodo_inercia="normal", phi_p=phiP, phi_g=phiG, num_particulas=numParticulas, max_iter=maxIter, v_max=Vmax, otimo_global=200, gbest_mutation_beta=False, pbest_mutation_beta=False, gbest_mutation_cauchy=False)
+
 fim = time.time()
-
-# Imprimir resultados ==================================================================================================
-print("Média das repetições: {:.9f}".format(np.mean(solRepeticoes)))
-print("Desvio padrão das repetições: {:.2f}".format(np.std(solRepeticoes)))
-
-# Imprimir tempo de execução ===========================================================================================
-if fim - inicio <= 60:
-    print(fim - inicio, "segundos")
-else:
-    print((fim - inicio) / 60, "minutos")
