@@ -22,14 +22,14 @@ DIMENSAO = 10  # Dimensão D do problema (tamanho do vetor solução)
 
 # Dados para as transformações das funções cec 2014 (extraídos da biblioteca opfunu)
 # Shit Data
-shiftData1Load = pd.read_table("shift_data_1.txt", delimiter='\s+', index_col=False, header=None)
-shiftData2Load = pd.read_table("shift_data_2.txt", delimiter='\s+', index_col=False, header=None)
+shiftData1Load = pd.read_table("./arquivos_suporte/shift_data_1.txt", delimiter='\s+', index_col=False, header=None)
+shiftData2Load = pd.read_table("./arquivos_suporte/shift_data_2.txt", delimiter='\s+', index_col=False, header=None)
 shiftData1 = shiftData1Load.values.reshape((-1))[:DIMENSAO]
 shiftData2 = shiftData2Load.values.reshape((-1))[:DIMENSAO]
 
 # Matrix Data
-matrixData1Load = pd.read_table("M_1_D10.txt", delimiter='\s+', index_col=False, header=None)
-matrixData2Load = pd.read_table("M_2_D10.txt", delimiter='\s+', index_col=False, header=None)
+matrixData1Load = pd.read_table("./arquivos_suporte/M_1_D10.txt", delimiter='\s+', index_col=False, header=None)
+matrixData2Load = pd.read_table("./arquivos_suporte/M_2_D10.txt", delimiter='\s+', index_col=False, header=None)
 matrixData1 = matrixData1Load.values
 matrixData2 = matrixData2Load.values
 
