@@ -113,13 +113,13 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                     raise TypeError('Para inercia linear, \'intervalo inercia\' precisar ser do tipo (w_inicial, w_final)')
                 inercia = (w[0] - w[1]) * ((max_iter - iteracao) / max_iter) + w[1]
             
-            elif metodo_inercia == "normal":
+            elif metodo_inercia == "static":
                 if type(w) not in (float, int):
-                    raise TypeError('Método normal de inercia requer valor numérico em \'w\'')
+                    raise TypeError('Método static de inercia requer valor numérico em \'w\'')
                 inercia = w
             
             else:
-                raise TypeError('\'metodo_inercia\' precisa ser \"normal\" ou \"linear\"')
+                raise TypeError('\'metodo_inercia\' precisa ser \"static\" ou \"linear\"')
             
             # Atualizar velocidade e posição
             for particula in range(numParticulas):
@@ -239,7 +239,7 @@ solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetiçã
 for repeticao in range(repeticoes):
     melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_2, 
                                               dimensao=DIMENSAO, w=W,
-                                              metodo_inercia="normal",
+                                              metodo_inercia="static",
                                               phi_p=phiP,
                                               phi_g=phiG,
                                               num_particulas=numParticulas,
