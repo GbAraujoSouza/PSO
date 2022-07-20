@@ -1,11 +1,10 @@
 import copy
-from ctypes import Union
-import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import random as rd
 import time
+from scipy.stats import variation
 
 
 class Particula(object):
@@ -88,10 +87,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
     # Encontrar melhor solução
     iteracao = 0
     criterio_parada_flag = False
-    melhores_fitness = []
-    piores_fitness = []
-    media_fitness = []
-    mediana_fitness = []
+    posicoes = {'p{}'.format(x): [] for x in range(num_particulas)}
     while not criterio_parada_flag:
 
         # Avaliar critério de parada
@@ -111,7 +107,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                     melhor_particula_index = particula
                     global_fitness = enxame[melhor_particula_index].melhor_fitness
 
-            # Atualizar velocidade e posição
+            # Verificar metodo de atualizacao do coeficiente de inercia
             if metodo_inercia == "linear":
                 if type(w) != tuple:
                     raise TypeError('Para inercia linear, \'intervalo inercia\' precisar ser do tipo (w_inicial, w_final)')
@@ -125,7 +121,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             else:
                 raise TypeError('\'metodo_inercia\' precisa ser \"normal\" ou \"linear\"')
             
-
+            # Atualizar velocidade e posição
             for particula in range(numParticulas):
                 for componente in range(dimensao):
                     rp = rd.uniform(0, 1)
@@ -150,6 +146,11 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             # Atualizar fitness de cada partícula
             for particula in range(num_particulas):
                 enxame[particula].fitness = func_fitness(enxame[particula].posicao)
+
+
+            # Armazenar historico da melhor posicao de cada particula
+            for particula in range(num_particulas):
+                posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
 
             # Mutação beta em gbest
             if gbest_mutation_beta:
@@ -192,12 +193,6 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                             melhor_particula_index = particula
                             global_fitness = enxame[melhor_particula_index].melhor_fitness
 
-            # Armazenar fitness da melhor particula
-            melhores_fitness.append(global_fitness)
-            piores_fitness.append(func_fitness(enxame[np.argmax([func_fitness(x.posicao) for x in enxame[:]])].posicao))
-            media_fitness.append(np.mean([func_fitness(x.posicao) for x in enxame[:]]))
-            mediana_fitness.append(np.median([func_fitness(x.posicao) for x in enxame[:]]))
-
 
             if gbest_mutation_cauchy:
                 weight_vector = np.zeros(dimensao)
@@ -220,65 +215,45 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
             iteracao += 1
             barra_progresso(iteracao, max_iter)
-
-
-    return global_fitness, iteracao, melhores_fitness, piores_fitness, media_fitness, mediana_fitness
+    
+    # exportar o historico de cada particula para analise futura
+    for particula in range(num_particulas):
+        np.savetxt("./particle_positions/p{}.csv".format(particula), posicoes[f'p{particula}'], delimiter=',')
+    return global_fitness, iteracao
 
 
 # Parâmetros do algoritmo ==============================================================================================
 W = 0.6  # inercia
-phiP = 2.0  # coeficiente cognitivo
+phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
-numParticulas = 10
-maxIter = 10000
-Vmax = 1
-repeticoes = 30
+numParticulas = 50
+maxAvaliacao = 100000
+maxIter = maxAvaliacao // numParticulas
+Vmax = 2
+repeticoes = 10
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite, melhores_fitness, piores_fitness, media_fitness , mediana_fitness= otimiza(func_fitness=func_objetivo_2,
-                                                                                dimensao=DIMENSAO,
-                                                                                w=0.6,
-                                                                                metodo_inercia="normal",
-                                                                                phi_p=phiP,
-                                                                                phi_g=phiG,
-                                                                                num_particulas=numParticulas,
-                                                                                max_iter=maxIter,
-                                                                                v_max=Vmax,
-                                                                                otimo_global=200,
-                                                                                gbest_mutation_beta=False,
-                                                                                pbest_mutation_beta=False,
-                                                                                gbest_mutation_cauchy=False)
+    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_2, 
+                                              dimensao=DIMENSAO, w=W,
+                                              metodo_inercia="normal",
+                                              phi_p=phiP,
+                                              phi_g=phiG,
+                                              num_particulas=numParticulas,
+                                              max_iter=maxIter,
+                                              v_max=Vmax,
+                                              otimo_global=200,
+                                              gbest_mutation_beta=False,
+                                              pbest_mutation_beta=False,
+                                              gbest_mutation_cauchy=False)
 
     solRepeticoes.append(melhor_fitness)
     print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
                                                                                 melhor_fitness))
 
-    # Plotar grafico de evolucao
-    fig = plt.figure()
-    ax = fig.add_subplot()
-
-    geracoes = np.arange(0, iteracao_limite)
-
-    ax.set_title("Grafico de evolucao")
-    ax.set_xlabel("iteracoes")
-    ax.set_ylabel("fitness")
-    ax.set_ylim((100, 500))
-    ax.scatter(geracoes[1000::500], melhores_fitness[1000::500], label="Melhor particula")
-    ax.scatter(geracoes[1000::500], piores_fitness[1000::500], label="Pior particula")
-    ax.scatter(geracoes[1000::500], media_fitness[1000::500], label="Média particula")
-    ax.scatter(geracoes[1000::500], mediana_fitness[1000::500], label="Mediana particula")
-
-    # Add legend to the plot
-    legend = ax.legend(loc='upper right', shadow=True, fontsize='medium')
-    legend.get_frame().set_facecolor('#eeeeee')
-
-    fig.savefig('beta_p_best_mutation.png')
-    # plt.show()
-    # plt.close(fig)
 
 
 fim = time.time()
