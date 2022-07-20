@@ -1,5 +1,4 @@
 import copy
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import random as rd
@@ -148,7 +147,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                 enxame[particula].fitness = func_fitness(enxame[particula].posicao)
 
 
-            # Armazenar historico da melhor posicao de cada particula
+            # Armazenar historico da melhor posicao de cada particula para avaliar o CV
             for particula in range(num_particulas):
                 posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
 
