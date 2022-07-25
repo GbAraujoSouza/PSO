@@ -162,9 +162,6 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             contador_mutacao_cv += 1
             barra_progresso(iteracao, max_iter)
     
-    # exportar o historico de cada particula para analise futura
-    for particula in range(num_particulas):
-        np.savetxt("./particle_positions/p{}.csv".format(particula), posicoes[f'p{particula}'], delimiter=',')
     return global_fitness, iteracao
 
 
