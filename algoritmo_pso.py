@@ -20,13 +20,11 @@ class Particula(object):
 DIMENSAO = 10  # Dimensão D do problema (tamanho do vetor solução)
 
 # Dados para as transformações das funções cec 2014 (extraídos da biblioteca opfunu)
-# Shit Data
 shiftData1Load = pd.read_table("./arquivos_suporte/shift_data_1.txt", delimiter='\s+', index_col=False, header=None)
 shiftData2Load = pd.read_table("./arquivos_suporte/shift_data_2.txt", delimiter='\s+', index_col=False, header=None)
 shiftData1 = shiftData1Load.values.reshape((-1))[:DIMENSAO]
 shiftData2 = shiftData2Load.values.reshape((-1))[:DIMENSAO]
 
-# Matrix Data
 matrixData1Load = pd.read_table("./arquivos_suporte/M_1_D10.txt", delimiter='\s+', index_col=False, header=None)
 matrixData2Load = pd.read_table("./arquivos_suporte/M_2_D10.txt", delimiter='\s+', index_col=False, header=None)
 matrixData1 = matrixData1Load.values
@@ -70,7 +68,7 @@ def barra_progresso(progresso: int, total: int) -> None:
 
 # Função para otimizar a função objetivo ===============================================================================
 def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
-            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_beta: bool, pbest_mutation_beta: bool, gbest_mutation_cauchy: bool, w: float | tuple, metodo_inercia: str = "normal") -> float and int and list:
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_beta: bool, pbest_mutation_beta: bool, gbest_mutation_cauchy: bool, w: float | tuple, metodo_inercia: str = "static") -> float and int and list:
 
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
@@ -85,6 +83,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
     # Encontrar melhor solução
     iteracao = 0
+    contador_mutacao_cv = 0
     criterio_parada_flag = False
     posicoes = {'p{}'.format(x): [] for x in range(num_particulas)}
     while not criterio_parada_flag:
@@ -151,13 +150,24 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             for particula in range(num_particulas):
                 posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
 
-            # Mutação beta em gbest
+            # Mutacao a partir do CV a cada 20 iteracoes
+            if contador_mutacao_cv == 100 and iteracao >= 1000:
+                for particula in range(num_particulas):
+                    for componente in range(dimensao):
+                        if abs(variation(posicoes[f'p{particula}'])[componente]) < 0.01:
+                            enxame[particula].melhor_posicao[componente] += enxame[particula].melhor_posicao[componente]*rd.uniform(0, 1)
+
+                    posicoes[f'p{particula}'] = []
+                
+
+                contador_mutacao_cv = 0
+
+            # Mutação beta em gbest *artigo*
             if gbest_mutation_beta:
                 if rd.uniform(0, 1) < 1 / dimensao:
                     n_normal = np.random.normal()
                     tau = 1 / np.sqrt(2 * num_particulas)
                     tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
-                    particula_mutante = np.zeros(dimensao)
                     for componente in range(dimensao):
                         n_normal_componente = np.random.normal()
                         beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
@@ -169,7 +179,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                                 melhor_particula_index = particula
                                 global_fitness = enxame[melhor_particula_index].melhor_fitness
             
-            # Mutação beta em pbest
+            # Mutação beta em pbest *artigo*
             if pbest_mutation_beta:
                 for particula in range(num_particulas):
                     if rd.uniform(0, 1) < 1 / dimensao:
@@ -192,7 +202,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                             melhor_particula_index = particula
                             global_fitness = enxame[melhor_particula_index].melhor_fitness
 
-
+            # mutacao gbest cauchy *artigo*
             if gbest_mutation_cauchy:
                 weight_vector = np.zeros(dimensao)
                 for particula in range(num_particulas):
@@ -213,6 +223,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                     global_fitness = min([func_fitness(x) for x in mutations])
 
             iteracao += 1
+            contador_mutacao_cv += 1
             barra_progresso(iteracao, max_iter)
     
     # exportar o historico de cada particula para analise futura
@@ -228,8 +239,8 @@ phiG = 2.0  # coeficiente social
 numParticulas = 50
 maxAvaliacao = 100000
 maxIter = maxAvaliacao // numParticulas
-Vmax = 2
-repeticoes = 10
+Vmax = 1.0
+repeticoes = 30
 
 inicio = time.time()
 
