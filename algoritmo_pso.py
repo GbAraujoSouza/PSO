@@ -141,13 +141,11 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
                 # Atualizar posição da particula
                 enxame[particula].posicao += enxame[particula].velocidade
 
-            # Atualizar fitness de cada partícula
-            for particula in range(num_particulas):
+                # Atualizar fitness de cada partícula
                 enxame[particula].fitness = func_fitness(enxame[particula].posicao)
 
 
-            # Armazenar historico da melhor posicao de cada particula para avaliar o CV
-            for particula in range(num_particulas):
+                # Armazenar historico da melhor posicao de cada particula para avaliar o CV
                 posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
 
             # Mutacao a partir do CV
