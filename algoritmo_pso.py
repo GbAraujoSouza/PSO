@@ -59,6 +59,15 @@ def func_objetivo_2(solution, bias=200):
     return f2_bent_cigar__(z) + bias
 
 
+def rosenbrook(solution):
+    result = 0
+    for i in range(len(solution) - 1):
+        result += 100 * (solution[i+1] - (solution[i])**2)**2 + (solution[i] - 1)**2
+    return result
+
+
+
+
 # Função para imprimir barra de progresso
 def barra_progresso(progresso: int, total: int) -> None:
     porcentagem = 100 * (progresso / float(total))
@@ -150,13 +159,13 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
             # Mutacao a partir do CV
             # percebeu-se que a partir da iteracao 200 as componentes variavam pouco
-            if contador_mutacao_cv == 500:
-                for particula in range(num_particulas):
-                    for componente in range(dimensao):
-                        if abs(variation(historico_posicoes[f'p{particula}'])[componente]) < 0.01:
-                            enxame[particula].melhor_posicao[componente] += enxame[particula].melhor_posicao[componente]*rd.uniform(0, 1)
-                    historico_posicoes[f'p{particula}'] = []
-                contador_mutacao_cv = 0
+            # if contador_mutacao_cv == 500:
+            #     for particula in range(num_particulas):
+            #         for componente in range(dimensao):
+            #             if abs(variation(historico_posicoes[f'p{particula}'])[componente]) < 0.01:
+            #                 enxame[particula].melhor_posicao[componente] += enxame[particula].melhor_posicao[componente]*rd.uniform(0, 1)
+            #         historico_posicoes[f'p{particula}'] = []
+            #     contador_mutacao_cv = 0
 
             iteracao += 1
             contador_mutacao_cv += 1
@@ -166,30 +175,30 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
 
 # Parâmetros do algoritmo ==============================================================================================
-W = 0.6  # inercia
-phiP = 1.0  # coeficiente cognitivo
-phiG = 2.0  # coeficiente social
-numParticulas = 100
+W = 0.7298  # inercia
+phiP = 1.49618  # coeficiente cognitivo
+phiG = 1.49618  # coeficiente social
+numParticulas = 20
 maxAvaliacao = 100000
 maxIter = maxAvaliacao // numParticulas
 Vmax = np.inf
-repeticoes = 30
+repeticoes = 200
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_1, 
+    melhor_fitness, iteracao_limite = otimiza(func_fitness=rosenbrook, 
                                               dimensao=DIMENSAO,
                                               w=W,
                                               metodo_inercia="static",
                                               phi_p=phiP,
                                               phi_g=phiG,
                                               num_particulas=numParticulas,
-                                              max_iter=maxIter,
+                                              max_iter=1000,
                                               v_max=Vmax,
-                                              otimo_global=100)
+                                              otimo_global=0)
 
     solRepeticoes.append(melhor_fitness)
     print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
@@ -208,3 +217,5 @@ if fim - inicio <= 60:
     print(fim - inicio, "segundos")
 else:
     print((fim - inicio) / 60, "minutos")
+
+print(rosenbrook(np.ones(10)))
