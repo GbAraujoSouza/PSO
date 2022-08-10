@@ -74,10 +74,21 @@ def sphere(solution):
 
 
 def ackley(solution):
-    result = 0
+    sum1 = 0
+    sum2 = 0
     for i in range(len(solution)):
-        result += -20 * np.exp(-0.2 * np.sqrt((1/i)*solution[i]**2)) - np.exp((1/i)*np.cos(2*np.pi*solution[i])) + 20 + np.exp(1)
+        sum1 += solution[i] ** 2
+        sum2 += np.cos(2 * np.pi * solution[i])
+    n = float(len(solution))
+    result = -20 * np.exp(-0.2 * np.sqrt(sum1/n)) - np.exp(sum2/n) + 20 + np.e
     return result
+
+
+def multimodal(solution):
+    sum1 = 0
+    for i in range(len(solution)):
+        sum1 += solution[i]*np.sin(np.sqrt(abs(solution[i])))
+    return 418.9829*len(solution) - sum1
 
 
 # Função para imprimir barra de progresso
@@ -194,21 +205,21 @@ numParticulas = 20
 maxAvaliacao = 100000
 maxIter = maxAvaliacao // numParticulas
 Vmax = np.inf
-repeticoes = 200
+repeticoes = 20
 
 inicio = time.time()
 
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite = otimiza(func_fitness=rosenbrook, 
+    melhor_fitness, iteracao_limite = otimiza(func_fitness=multimodal, 
                                               dimensao=DIMENSAO,
                                               w=W,
                                               metodo_inercia="static",
                                               phi_p=phiP,
                                               phi_g=phiG,
                                               num_particulas=numParticulas,
-                                              max_iter=1000,
+                                              max_iter=100000,
                                               v_max=Vmax,
                                               otimo_global=0)
 
@@ -230,4 +241,4 @@ if fim - inicio <= 60:
 else:
     print((fim - inicio) / 60, "minutos")
 
-print(rosenbrook(np.ones(10)))
+print(multimodal(np.zeros(10)))
