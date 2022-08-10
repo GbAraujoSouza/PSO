@@ -72,6 +72,14 @@ def sphere(solution):
         result += i**2
     return result
 
+
+def ackley(solution):
+    result = 0
+    for i in range(len(solution)):
+        result += -20 * np.exp(-0.2 * np.sqrt((1/i)*solution[i]**2)) - np.exp((1/i)*np.cos(2*np.pi*solution[i])) + 20 + np.exp(1)
+    return result
+
+
 # Função para imprimir barra de progresso
 def barra_progresso(progresso: int, total: int) -> None:
     porcentagem = 100 * (progresso / float(total))
