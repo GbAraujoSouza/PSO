@@ -85,7 +85,7 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
     iteracao = 0
     contador_mutacao_cv = 0
     criterio_parada_flag = False
-    posicoes = {'p{}'.format(x): [] for x in range(num_particulas)}
+    historico_posicoes = {'p{}'.format(x): [] for x in range(num_particulas)}
     while not criterio_parada_flag:
 
         # Avaliar critério de parada
@@ -146,16 +146,16 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
 
                 # Armazenar historico da melhor posicao de cada particula para avaliar o CV
-                posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
+                historico_posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
 
             # Mutacao a partir do CV
             # percebeu-se que a partir da iteracao 200 as componentes variavam pouco
-            if contador_mutacao_cv == 100 and iteracao >= 200:
+            if contador_mutacao_cv == 500:
                 for particula in range(num_particulas):
                     for componente in range(dimensao):
-                        if abs(variation(posicoes[f'p{particula}'])[componente]) < 0.01:
+                        if abs(variation(historico_posicoes[f'p{particula}'])[componente]) < 0.01:
                             enxame[particula].melhor_posicao[componente] += enxame[particula].melhor_posicao[componente]*rd.uniform(0, 1)
-                    posicoes[f'p{particula}'] = []
+                    historico_posicoes[f'p{particula}'] = []
                 contador_mutacao_cv = 0
 
             iteracao += 1
@@ -169,10 +169,10 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 W = 0.6  # inercia
 phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
-numParticulas = 50
+numParticulas = 100
 maxAvaliacao = 100000
 maxIter = maxAvaliacao // numParticulas
-Vmax = 1.0
+Vmax = np.inf
 repeticoes = 30
 
 inicio = time.time()
@@ -180,15 +180,16 @@ inicio = time.time()
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_2, 
-                                              dimensao=DIMENSAO, w=W,
+    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_1, 
+                                              dimensao=DIMENSAO,
+                                              w=W,
                                               metodo_inercia="static",
                                               phi_p=phiP,
                                               phi_g=phiG,
                                               num_particulas=numParticulas,
                                               max_iter=maxIter,
                                               v_max=Vmax,
-                                              otimo_global=200)
+                                              otimo_global=100)
 
     solRepeticoes.append(melhor_fitness)
     print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
