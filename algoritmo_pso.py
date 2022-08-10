@@ -66,7 +66,11 @@ def rosenbrook(solution):
     return result
 
 
-
+def sphere(solution):
+    result = 0
+    for i in range(len(solution)):
+        result += i**2
+    return result
 
 # Função para imprimir barra de progresso
 def barra_progresso(progresso: int, total: int) -> None:
