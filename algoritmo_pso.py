@@ -71,9 +71,25 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             num_particulas: int, max_iter: int, v_max: float, otimo_global: float, w: float | tuple, metodo_inercia: str = "static") -> float and int:
 
     # Inicializar enxame
-    enxame = [Particula(dimensao=dimensao,
+    enxame_original = [Particula(dimensao=dimensao,
                         func_fitness=func_fitness,
                         inicializar_pos=(LIMITE_INFERIOR, LIMITE_SUPERIOR)) for _ in range(num_particulas)]
+
+
+    enxame_oposto = [Particula(dimensao=dimensao,
+                        func_fitness=func_fitness,
+                        inicializar_pos=(LIMITE_INFERIOR, LIMITE_SUPERIOR)) for _ in range(num_particulas)]
+
+    for particula in range(num_particulas):
+        enxame_oposto[particula].posicao = - copy.copy(enxame_original[particula].posicao)
+        enxame_oposto[particula].melhor_posicao = - copy.copy(enxame_original[particula].melhor_posicao)
+
+        enxame_oposto[particula].fitness = func_fitness(enxame_oposto[particula].posicao)
+        enxame_oposto[particula].melhor_fitness = func_fitness(enxame_oposto[particula].melhor_posicao)
+
+    enxame_join = enxame_original + enxame_oposto
+    enxame = sorted(enxame_join, key=lambda particula: particula.fitness, reverse=True)[0:num_particulas]
+
     # Inicializar melhor partícula
     melhor_particula_index = 0
     for particula in range(num_particulas):
@@ -150,10 +166,10 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
             # Mutacao a partir do CV
             # percebeu-se que a partir da iteracao 200 as componentes variavam pouco
-            if contador_mutacao_cv == 500:
+            if contador_mutacao_cv == 20 and iteracao >= 300:
                 for particula in range(num_particulas):
                     for componente in range(dimensao):
-                        if abs(variation(historico_posicoes[f'p{particula}'])[componente]) < 0.01:
+                        if abs(variation(historico_posicoes[f'p{particula}'])[componente]) < 0.001:
                             enxame[particula].melhor_posicao[componente] += enxame[particula].melhor_posicao[componente]*rd.uniform(0, 1)
                     historico_posicoes[f'p{particula}'] = []
                 contador_mutacao_cv = 0
@@ -161,6 +177,10 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
             iteracao += 1
             contador_mutacao_cv += 1
             barra_progresso(iteracao, max_iter)
+
+    # exportar o historico de cada particula para analise futura
+    # for particula in range(num_particulas):
+    #     np.savetxt("./particle_positions/p{}.csv".format(particula), historico_posicoes[f'p{particula}'], delimiter=',')
     
     return global_fitness, iteracao
 
@@ -169,10 +189,10 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 W = 0.6  # inercia
 phiP = 1.0  # coeficiente cognitivo
 phiG = 2.0  # coeficiente social
-numParticulas = 100
+numParticulas = 50
 maxAvaliacao = 100000
 maxIter = maxAvaliacao // numParticulas
-Vmax = np.inf
+Vmax = 1.0
 repeticoes = 30
 
 inicio = time.time()

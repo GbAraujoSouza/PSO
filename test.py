@@ -1,16 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import copy
 
-num_particulas = 10
-d = {"p{}".format(x): [] for x in range(num_particulas)}
+n = 4
 
-iter_1 = [1,2,3,4,5]
-iter_2 = [0,0,0,0,0]
+a = np.array([1,2,3,4,5,6,7,8,9])
 
-for i in d:
-    d[i].append(iter_1)
-    d[i].append(iter_2)
-
-df = pd.DataFrame(d['p1'], columns=['coord_{}'.format(i) for i in range(5)])
-print(df)
+print(a[0:n])
