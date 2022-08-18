@@ -68,7 +68,7 @@ def barra_progresso(progresso: int, total: int) -> None:
 
 # Função para otimizar a função objetivo ===============================================================================
 def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
-            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, w: float | tuple, metodo_inercia: str = "static") -> float and int:
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_beta: bool, pbest_mutation_beta: bool, w: float | tuple, metodo_inercia: str = "static") -> float and int:
 
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
@@ -147,6 +147,41 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
                 # Armazenar historico da melhor posicao de cada particula para avaliar o CV
                 historico_posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
+            
+            # Mutação beta em gbest
+            if gbest_mutation_beta:
+                if rd.uniform(0, 1) < 1 / dimensao:
+                    n_normal = np.random.normal()
+                    tau = 1 / np.sqrt(2 * num_particulas)
+                    tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
+                    for componente in range(dimensao):
+                        n_normal_componente = np.random.normal()
+                        beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
+                        enxame[melhor_particula_index].melhor_posicao[componente] += beta_linha * np.random.beta(0.5, 0.5)
+                    global_fitness = func_fitness(enxame[melhor_particula_index].melhor_posicao)
+                    for particula in range(particula):
+                        if enxame[particula].melhor_fitness < global_fitness:
+                                melhor_particula_index = particula
+                                global_fitness = enxame[melhor_particula_index].melhor_fitness
+            
+            # Mutação beta em pbest
+            if pbest_mutation_beta:
+                for particula in range(num_particulas):
+                    if rd.uniform(0, 1) < 1 / dimensao:
+                        n_normal = np.random.normal()
+                        tau = 1 / np.sqrt(2 * num_particulas)
+                        tau_linha = 1 / np.sqrt(2 * np.sqrt(num_particulas))
+                        for componente in range(dimensao):
+                            n_normal_componente = np.random.normal()
+                            beta_linha = 3 * np.exp(tau * n_normal + tau_linha * n_normal_componente)
+                            enxame[particula].melhor_posicao[componente] += rd.betavariate(0.5, 0.5) * beta_linha
+                        enxame[particula].melhor_fitness = func_fitness(enxame[particula].melhor_posicao)
+                        if enxame[particula].fitness < enxame[particula].melhor_fitness:
+                            enxame[particula].melhor_posicao = copy.copy(enxame[particula].posicao)
+                            enxame[particula].melhor_fitness = enxame[particula].fitness
+                        if enxame[particula].melhor_fitness < global_fitness:
+                            melhor_particula_index = particula
+                            global_fitness = enxame[melhor_particula_index].melhor_fitness
 
             # Mutacao a partir do CV
             # percebeu-se que a partir da iteracao 200 as componentes variavam pouco
@@ -189,7 +224,9 @@ for repeticao in range(repeticoes):
                                               num_particulas=numParticulas,
                                               max_iter=maxIter,
                                               v_max=Vmax,
-                                              otimo_global=100)
+                                              otimo_global=100,
+                                              gbest_mutation_beta=False,
+                                              pbest_mutation_beta=False)
 
     solRepeticoes.append(melhor_fitness)
     print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
