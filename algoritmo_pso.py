@@ -68,7 +68,7 @@ def barra_progresso(progresso: int, total: int) -> None:
 
 # Função para otimizar a função objetivo ===============================================================================
 def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
-            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, w: float | tuple, metodo_inercia: str = "static") -> float and int:
+            num_particulas: int, max_iter: int, v_max: float, otimo_global: float, gbest_mutation_cauchy: bool, w: float | tuple, metodo_inercia: str = "static") -> float and int:
 
     # Inicializar enxame
     enxame = [Particula(dimensao=dimensao,
@@ -147,10 +147,28 @@ def otimiza(func_fitness: callable, dimensao: int, phi_p: float, phi_g: float,
 
                 # Armazenar historico da melhor posicao de cada particula para avaliar o CV
                 historico_posicoes[f'p{particula}'].append(enxame[particula].melhor_posicao)
+            
+            if gbest_mutation_cauchy:
+                weight_vector = np.zeros(dimensao)
+                for particula in range(num_particulas):
+                    weight_vector += copy.copy(enxame[particula].velocidade / num_particulas)
+                
+                for componente in range(dimensao):
+                    if weight_vector[componente] > 1:
+                        weight_vector[componente] = 1
+                    elif weight_vector[componente] < - 1:
+                        weight_vector[componente] = - 1
+                mutations = []
+                for mutacao in range(20):
+                    mutations.append(copy.copy(enxame[melhor_particula_index].melhor_posicao) + weight_vector * (np.random.standard_cauchy() / 100))
+                
+                if min([func_fitness(x) for x in mutations]) < global_fitness:
+                    enxame[melhor_particula_index].melhor_posicao = mutations[np.argmin([func_fitness(x) for x in mutations])]
+                    global_fitness = min([func_fitness(x) for x in mutations])
 
             # Mutacao a partir do CV
             # percebeu-se que a partir da iteracao 200 as componentes variavam pouco
-            if contador_mutacao_cv == 500:
+            if contador_mutacao_cv == 500 and iteracao >= 300:
                 for particula in range(num_particulas):
                     for componente in range(dimensao):
                         if abs(variation(historico_posicoes[f'p{particula}'])[componente]) < 0.01:
@@ -172,7 +190,7 @@ phiG = 2.0  # coeficiente social
 numParticulas = 100
 maxAvaliacao = 100000
 maxIter = maxAvaliacao // numParticulas
-Vmax = np.inf
+Vmax = 2.0
 repeticoes = 30
 
 inicio = time.time()
@@ -180,7 +198,7 @@ inicio = time.time()
 solRepeticoes = []  # Lista para armazenar a melhor solução de cada repetição
 
 for repeticao in range(repeticoes):
-    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_1, 
+    melhor_fitness, iteracao_limite = otimiza(func_fitness=func_objetivo_2, 
                                               dimensao=DIMENSAO,
                                               w=W,
                                               metodo_inercia="static",
@@ -189,7 +207,8 @@ for repeticao in range(repeticoes):
                                               num_particulas=numParticulas,
                                               max_iter=maxIter,
                                               v_max=Vmax,
-                                              otimo_global=100)
+                                              otimo_global=200,
+                                              gbest_mutation_cauchy=True)
 
     solRepeticoes.append(melhor_fitness)
     print("\nRepetição: {:>2} | Iteração Máxima: {:>6} | Melhor Fitness: {:.9f}".format(repeticao + 1, iteracao_limite,
