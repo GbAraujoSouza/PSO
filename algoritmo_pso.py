@@ -201,6 +201,7 @@ fim = time.time()
 
 # Imprimir resultados ==================================================================================================
 print("Média das repetições: {:.9f}".format(np.mean(solRepeticoes)))
+print("Mediana das repetições: {:.9f}".format(np.median(solRepeticoes)))
 print("Desvio padrão das repetições: {:.2f}".format(np.std(solRepeticoes)))
 
 # Imprimir tempo de execução ===========================================================================================
